@@ -15,7 +15,7 @@
 # Contributors
 # - Dave Eddy <dave@daveeddy.com> bahamas10
 
-export BASHER_VERSION='v0.0.0'
+export BASHER_VERSION='v0.0.2'
 
 # print the basher usage message
 usage() {
@@ -135,7 +135,7 @@ basher_log() {
 	if ! $_basher_printed_header; then
 		printf '[%s] (%s)\n' \
 			"$COLOR_GREEN$(_basher_date)$COLOR_RESET" \
-			"$COLOR_YELLOW$_BASHER_CURRENT_PLUGIN$COLOR_RESET"
+			"$COLOR_YELLOW$_basher_current_plugin$COLOR_RESET"
 		_basher_printed_header=true
 	fi
 
@@ -373,6 +373,7 @@ git_repository() {
 	# if the repository is already checked out
 	trace "git_repository :: \`git clone $repo $dir\`"
 	if git clone "$repo" "$dir" 2>/dev/null; then
+		trace "git_repository :: $repo was freshly cloned"
 		freshrepo=true
 	fi
 
@@ -392,9 +393,12 @@ git_repository() {
 		echo "$out"
 		trace 'git_repository :: calling `git pull`'
 		git pull         || fatal "git_repository :: failed to \`git pull\` in $dir"
-		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 	else
 		trace 'git_repository :: skipping `git pull`; repository up-to-date'
+	fi
+
+	if [[ -n $out ]] || $freshrepo; then
+		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 	fi
 
 	trace 'git_repository :: leaving subshell'
@@ -420,7 +424,7 @@ if printf '%()T' -1 &>/dev/null; then
 	_basher_builtin_date=true
 fi
 
-_BASHER_CURRENT_PLUGIN='main'
+_basher_current_plugin='main'
 log "running basher ($BASHER_VERSION) as $USER on $HOSTNAME (pid $$)"
 debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION"
 
@@ -499,12 +503,12 @@ fi
 if [[ -n $_basher_test_script ]]; then
 	log "testing $_basher_test_script in $PWD"
 	_basher_printed_header=false
-	_BASHER_CURRENT_PLUGIN="main->$_basher_test_script"
+	_basher_current_plugin="main->$_basher_test_script"
 	(
 	. "$_basher_test_script"
 	)
 	code=$?
-	_BASHER_CURRENT_PLUGIN='main'
+	_basher_current_plugin='main'
 
 	if ((code == 0)); then
 		log "finished $_basher_test_script successfully"
@@ -536,12 +540,12 @@ for plugin in "${BASHER_PLUGINS[@]}"; do
 	# sourcing the script.
 	trace "chdir(2) to $PWD/plugins/$dir"
 	_basher_printed_header=false
-	_BASHER_CURRENT_PLUGIN="main->$dir->$file"
+	_basher_current_plugin="main->$dir->$file"
 	(
-	cd "$PWD/plugins/$dir" && . "$file"
+	cd "$PWD/plugins/$dir" && . "./$file"
 	)
 	code=$?
-	_BASHER_CURRENT_PLUGIN='main'
+	_basher_current_plugin='main'
 
 	if ((code == 0)); then
 		debug "finished $plugin successfully"
